@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Locate Widget with Ask Before Track</title>
+  <link rel="stylesheet" href="https://js.arcgis.com/4.21/esri/themes/light/main.css">
+  <script src="https://js.arcgis.com/4.21/"></script>
+  <script>
+    require([
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/widgets/Locate",
+      "dojo/domReady!"
+    ], function(Map, MapView, Locate) {
+      var map = new Map({
+        basemap: "streets"
+      });
+
+      var view = new MapView({
+        container: "viewDiv",
+        map: map,
+        center: [-118.71511, 34.09042], // Longitude, latitude
+        zoom: 11
+      });
+
+      var locateWidget = new Locate({
+        view: view,
+        useHeadingEnabled: false,
+        goToOverride: function(view, options) {
+          options.target.scale = 1500;
+          return view.goTo(options.target);
+        }
+      });
+
+      view.ui.add(locateWidget, "top-left");
+
+      locateWidget.on("locate", function(evt) {
+        // Ask user for permission before tracking
+        var confirmed = confirm("Allow this site to access your location?");
+        
+        if (confirmed) {
+          // Capture user's location
+          var coords = evt.position.coords;
+          var latitude = coords.latitude;
+          var longitude = coords.longitude;
+
+          // Send the location data to your Glitch endpoint
+          fetch('https://your-project-name.glitch.me/save-location', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              latitude: latitude,
+              longitude: longitude
+            })
+          }).then(response => {
+            if (response.ok) {
+              console.log("Location data sent successfully.");
+            } else {
+              console.log("Failed to send location data.");
+            }
+          }).catch(error => {
+            console.error("Error sending location data:", error);
+          });
+        } else {
+          console.log("User denied location tracking.");
+          // Handle case where user denies location tracking
+        }
+      });
+    });
+  </script>
+</head>
+<body>
+  <div id="viewDiv" style="width: 100%; height: 100%;"></div>
+</body>
+</html>
